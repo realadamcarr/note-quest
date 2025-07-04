@@ -1,50 +1,178 @@
-# Welcome to your Expo app 👋
+# 🎮 Note Quest
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A gamified note-taking app built with React Native and Expo. Turn your daily tasks into an RPG adventure where completing notes earns you XP, levels, and unlocks character cosmetics!
 
-## Get started
+## ✨ Features
 
-1. Install dependencies
+### � **Smart Note Taking**
+- Create, edit, and complete notes with a beautiful interface
+- Mark notes as complete to earn XP
+- Persistent storage using AsyncStorage
 
+### 🎮 **RPG Gamification System**
+- **XP & Leveling**: Earn 10 XP per completed note
+- **Character Progression**: Level up every 100 XP
+- **Cosmetic Unlocks**: Unlock hats, outfits, accessories, and backgrounds
+- **Visual Character**: Customizable sprite-based character display
+
+### 🎨 **Character Customization**
+- **Hats**: Baseball Cap, Crown, Wizard Hat, Party Hat
+- **Outfits**: Casual, Formal, Superhero, Ninja
+- **Accessories**: Sunglasses, Briefcase, Trophy
+- **Backgrounds**: Forest, City, Space
+- **Smart Sprite System**: Use custom sprites or emoji fallbacks
+
+### 📱 **Modern UI/UX**
+- Beautiful tab-based navigation
+- Parallax scrolling effects
+- Level-up celebrations with confetti
+- Character preview in cosmetics showcase
+- Responsive design for all screen sizes
+
+## 🚀 Getting Started
+
+### Prerequisites
+- Node.js (v16 or higher)
+- npm or yarn
+- Expo CLI
+- Android Studio (for Android builds) or Xcode (for iOS builds)
+
+### Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/yourusername/note-quest.git
+   cd note-quest
+   ```
+
+2. **Install dependencies**
    ```bash
    npm install
    ```
 
-2. Start the app
-
+3. **Start the development server**
    ```bash
-   npx expo start
+   npm start
    ```
 
-In the output, you'll find options to open the app in a
+4. **Run on device/simulator**
+   ```bash
+   # Android
+   npm run android
+   
+   # iOS
+   npm run ios
+   
+   # Web
+   npm run web
+   ```
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## 📱 Building APK
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+To create an APK for testing:
 
-## Get a fresh project
+1. **Install EAS CLI**
+   ```bash
+   npm install -g eas-cli
+   ```
 
-When you're ready, run:
+2. **Login to Expo**
+   ```bash
+   eas login
+   ```
 
-```bash
-npm run reset-project
+3. **Build APK**
+   ```bash
+   eas build --platform android --profile preview
+   ```
+
+## 🎨 Custom Sprites
+
+The app supports custom character sprites! See [`SPRITE_GUIDE.md`](SPRITE_GUIDE.md) for detailed instructions on:
+- Adding your own sprite artwork
+- Recommended sprite specifications
+- File naming conventions
+- Enabling/disabling the sprite system
+
+## 🛠️ Project Structure
+
+```
+note-quest/
+├── app/                    # Main app screens
+│   ├── (tabs)/            # Tab navigation screens
+│   │   ├── index.tsx      # Notes screen (main)
+│   │   ├── explore.tsx    # Character & stats screen
+│   │   └── _layout.tsx    # Tab layout configuration
+│   └── _layout.tsx        # Root layout
+├── components/            # Reusable components
+│   ├── Character.tsx      # Character display & logic
+│   ├── CosmeticsShowcase.tsx  # Cosmetics grid
+│   ├── SpriteAssets.ts    # Sprite loading system
+│   └── ui/               # UI components
+├── assets/               # Static assets
+│   ├── images/          # App icons & images
+│   └── sprites/         # Character sprite files
+├── constants/           # App constants & themes
+└── hooks/              # Custom React hooks
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## 🎯 Key Components
 
-## Learn more
+### Character System
+- **Character.tsx**: Main character display with cosmetics
+- **SpriteAssets.ts**: Sprite loading with emoji fallbacks
+- **CosmeticsShowcase.tsx**: Grid view of all cosmetics
 
-To learn more about developing your project with Expo, look at the following resources:
+### Game Logic
+- **XP System**: 10 XP per completed note
+- **Leveling**: Level up every 100 XP
+- **Auto-equip**: Highest unlocked cosmetics are equipped
+- **Persistence**: All progress saved locally
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## 🔧 Configuration
 
-## Join the community
+### App Settings
+- **app.json**: Expo configuration
+- **eas.json**: Build configuration
+- **tsconfig.json**: TypeScript settings
 
-Join our community of developers creating universal apps.
+### Customization
+- **Colors.ts**: App color scheme
+- **Character.tsx**: Cosmetics & unlock levels
+- **SpriteAssets.ts**: Sprite file mappings
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+## 📦 Dependencies
+
+### Core
+- **Expo**: ~52.0.11
+- **React Native**: 0.76.3
+- **React**: 18.3.1
+- **TypeScript**: ^5.3.3
+
+### Features
+- **@react-native-async-storage/async-storage**: Data persistence
+- **expo-router**: Navigation
+- **react-native-reanimated**: Animations
+- **expo-haptics**: Tactile feedback
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the MIT License.
+
+## 🎉 Acknowledgments
+
+- Built with [Expo](https://expo.dev/)
+- Icons from [Expo Vector Icons](https://icons.expo.fyi/)
+- Inspired by RPG progression systems
+
+---
+
+**Turn your productivity into an adventure! 🗡️✨**
