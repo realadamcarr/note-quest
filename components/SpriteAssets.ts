@@ -2,12 +2,12 @@
 // You can replace these with your actual sprite files
 
 // Set this to true once you've added your custom sprite images
-export const SPRITES_ENABLED = false;
+export const SPRITES_ENABLED = true;
 
 export const SPRITE_ASSETS = {
   // Base Characters
   characters: {
-    // default: require('@/assets/sprites/characters/default.png'),
+    default: require('@/assets/sprites/characters/default.png'),
     // Add more character variations here
   },
   

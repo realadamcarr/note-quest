@@ -1,6 +1,10 @@
 import { Character, getNextUnlock } from '@/components/Character';
+import { EnhancedNoteCard } from '@/components/EnhancedNoteCard';
+import { LevelUpNotification } from '@/components/LevelUpNotification';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
+import { XPProgressBar } from '@/components/XPProgressBar';
+import { useTheme } from '@/contexts/ThemeContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect, useState } from 'react';
 import { Alert, FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -21,11 +25,16 @@ interface UserProgress {
 }
 
 export default function HomeScreen() {
+  const { theme } = useTheme();
   const [notes, setNotes] = useState<Note[]>([]);
   const [userProgress, setUserProgress] = useState<UserProgress>({ level: 1, xp: 0, totalXp: 0 });
   const [newNoteTitle, setNewNoteTitle] = useState('');
   const [newNoteContent, setNewNoteContent] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
+  const [showLevelUp, setShowLevelUp] = useState(false);
+  const [levelUpData, setLevelUpData] = useState({ newLevel: 1, xpGained: 0, nextUnlock: null as any });
+
+  const styles = createStyles(theme);
 
   useEffect(() => {
     loadData();
@@ -120,18 +129,15 @@ export default function HomeScreen() {
     setUserProgress(newProgress);
     saveData(updatedNotes, newProgress);
 
-    // Enhanced feedback
+    // Enhanced feedback with level up modal
     if (leveledUp) {
       const nextUnlock = getNextUnlock(newLevel);
-      const unlockMessage = nextUnlock 
-        ? `\n\nNext unlock: ${nextUnlock.name} at Level ${nextUnlock.unlockLevel}!`
-        : '\n\nYou\'ve unlocked all cosmetics! 🎉';
-        
-      Alert.alert(
-        '🎉 LEVEL UP! 🎉', 
-        `Congratulations! You reached Level ${newLevel}!${unlockMessage}\n\n+${gainedXp} XP from completing "${note.title}"`,
-        [{ text: 'Awesome!', style: 'default' }]
-      );
+      setLevelUpData({
+        newLevel,
+        xpGained: gainedXp,
+        nextUnlock,
+      });
+      setShowLevelUp(true);
     } else {
       Alert.alert(
         '✅ Task Completed!', 
@@ -161,48 +167,57 @@ export default function HomeScreen() {
   };
 
   const renderNote = ({ item }: { item: Note }) => (
-    <ThemedView style={[styles.noteCard, item.isCompleted && styles.completedNote]}>
-      <ThemedText style={styles.noteTitle}>{item.title}</ThemedText>
-      {item.content ? <ThemedText style={styles.noteContent}>{item.content}</ThemedText> : null}
-      <View style={styles.noteFooter}>
-        <ThemedText style={styles.xpReward}>+{item.xpReward} XP</ThemedText>
-        <View style={styles.noteActions}>
-          {!item.isCompleted && (
-            <TouchableOpacity
-              style={styles.completeButton}
-              onPress={() => completeTask(item.id)}
-            >
-              <Text style={styles.buttonText}>Complete</Text>
-            </TouchableOpacity>
-          )}
-          <TouchableOpacity
-            style={styles.deleteButton}
-            onPress={() => deleteNote(item.id)}
-          >
-            <Text style={styles.buttonText}>Delete</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </ThemedView>
+    <EnhancedNoteCard
+      note={item}
+      onComplete={completeTask}
+      onDelete={deleteNote}
+    />
   );
 
   const xpForNextLevel = calculateXpForNextLevel(userProgress.level);
-  const xpProgress = (userProgress.xp / xpForNextLevel) * 100;
+
+  // Sort notes to show incomplete first, then by creation date
+  const sortedNotes = [...notes].sort((a, b) => {
+    // Sort by completion status (incomplete first), then by creation date (newest first)
+    if (a.isCompleted !== b.isCompleted) {
+      return a.isCompleted ? 1 : -1;
+    }
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
 
   return (
     <ThemedView style={styles.container}>
+      {/* Level Up Notification */}
+      <LevelUpNotification
+        visible={showLevelUp}
+        newLevel={levelUpData.newLevel}
+        xpGained={levelUpData.xpGained}
+        nextUnlockName={levelUpData.nextUnlock?.name}
+        nextUnlockLevel={levelUpData.nextUnlock?.unlockLevel}
+        onClose={() => setShowLevelUp(false)}
+      />
+
+      {/* Header */}
+      <View style={styles.header}>
+        <ThemedText style={styles.headerTitle}>Completed Notes</ThemedText>
+        <ThemedText style={styles.headerSubtitle}>
+          Track your progress and earn XP! 🚀
+        </ThemedText>
+      </View>
+
       {/* Progress Header with Character */}
       <ThemedView style={styles.progressHeader}>
         <View style={styles.headerContent}>
           <Character level={userProgress.level} size="medium" />
           <View style={styles.progressInfo}>
             <ThemedText style={styles.levelText}>Level {userProgress.level}</ThemedText>
-            <View style={styles.xpBarContainer}>
-              <View style={styles.xpBar}>
-                <View style={[styles.xpProgress, { width: `${xpProgress}%` }]} />
-              </View>
-              <ThemedText style={styles.xpText}>{userProgress.xp}/{xpForNextLevel} XP</ThemedText>
-            </View>
+            <XPProgressBar
+              currentXP={userProgress.xp}
+              maxXP={xpForNextLevel}
+              level={userProgress.level}
+              animated={true}
+              showTooltip={true}
+            />
             <ThemedText style={styles.totalXpText}>Total XP: {userProgress.totalXp}</ThemedText>
           </View>
         </View>
@@ -249,13 +264,7 @@ export default function HomeScreen() {
 
       {/* Notes List */}
       <FlatList
-        data={notes.sort((a, b) => {
-          // Sort by completion status (incomplete first), then by creation date (newest first)
-          if (a.isCompleted !== b.isCompleted) {
-            return a.isCompleted ? 1 : -1;
-          }
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-        })}
+        data={sortedNotes}
         renderItem={renderNote}
         keyExtractor={(item) => item.id}
         style={styles.notesList}
@@ -273,16 +282,42 @@ export default function HomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any) => StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
+    backgroundColor: theme.colors.background,
+  },
+  header: {
+    marginBottom: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  headerLeft: {
+    flex: 1,
+  },
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: '900',
+    color: theme.colors.text,
+    marginBottom: 4,
+  },
+  headerSubtitle: {
+    fontSize: 16,
+    color: theme.colors.textSecondary,
+    fontWeight: '500',
   },
   progressHeader: {
-    padding: 16,
-    marginBottom: 16,
-    borderRadius: 12,
-    backgroundColor: 'rgba(0, 122, 255, 0.1)',
+    padding: 20,
+    marginBottom: 20,
+    borderRadius: 16,
+    backgroundColor: theme.colors.surface,
+    shadowColor: theme.colors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: theme.isDark ? 0.3 : 0.1,
+    shadowRadius: 8,
+    elevation: 4,
   },
   headerContent: {
     flexDirection: 'row',
@@ -293,76 +328,72 @@ const styles = StyleSheet.create({
     marginLeft: 16,
   },
   levelText: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: 24,
+    fontWeight: '800',
     marginBottom: 8,
-  },
-  xpBarContainer: {
-    marginBottom: 8,
-  },
-  xpBar: {
-    width: '100%',
-    height: 8,
-    backgroundColor: '#e0e0e0',
-    borderRadius: 4,
-    overflow: 'hidden',
-    marginBottom: 4,
-  },
-  xpProgress: {
-    height: '100%',
-    backgroundColor: '#4CAF50',
-  },
-  xpText: {
-    fontSize: 14,
-    fontWeight: '600',
+    color: theme.colors.primary,
   },
   totalXpText: {
-    fontSize: 12,
+    fontSize: 14,
     textAlign: 'left',
     opacity: 0.7,
+    marginTop: 4,
+    fontWeight: '500',
   },
   showFormButton: {
-    backgroundColor: '#007AFF',
-    padding: 16,
-    borderRadius: 8,
+    backgroundColor: theme.colors.primary,
+    padding: 18,
+    borderRadius: 12,
     alignItems: 'center',
     marginBottom: 16,
+    shadowColor: theme.colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
   },
   addForm: {
-    padding: 16,
-    backgroundColor: 'rgba(0, 0, 0, 0.05)',
-    borderRadius: 8,
+    padding: 20,
+    backgroundColor: theme.colors.surface,
+    borderRadius: 12,
     marginBottom: 16,
+    shadowColor: theme.colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: theme.isDark ? 0.3 : 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ddd',
-    padding: 12,
-    borderRadius: 8,
+    borderColor: theme.colors.border,
+    padding: 16,
+    borderRadius: 10,
     marginBottom: 12,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surface,
     fontSize: 16,
+    color: theme.colors.text,
   },
   contentInput: {
-    height: 80,
+    height: 100,
     textAlignVertical: 'top',
   },
   formButtons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    marginTop: 8,
   },
   addButton: {
-    backgroundColor: '#4CAF50',
-    padding: 12,
-    borderRadius: 8,
+    backgroundColor: theme.colors.success,
+    padding: 14,
+    borderRadius: 10,
     flex: 1,
     alignItems: 'center',
     marginRight: 8,
   },
   cancelButton: {
-    backgroundColor: '#FF6B6B',
-    padding: 12,
-    borderRadius: 8,
+    backgroundColor: theme.colors.error,
+    padding: 14,
+    borderRadius: 10,
     flex: 1,
     alignItems: 'center',
     marginLeft: 8,
@@ -370,57 +401,10 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#fff',
     fontWeight: '600',
+    fontSize: 16,
   },
   notesList: {
     flex: 1,
-  },
-  noteCard: {
-    padding: 16,
-    marginBottom: 12,
-    borderRadius: 8,
-    backgroundColor: 'rgba(0, 0, 0, 0.02)',
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-  },
-  completedNote: {
-    backgroundColor: 'rgba(76, 175, 80, 0.1)',
-    borderColor: '#4CAF50',
-  },
-  noteTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 8,
-  },
-  noteContent: {
-    fontSize: 14,
-    marginBottom: 12,
-    lineHeight: 20,
-  },
-  noteFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  xpReward: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#4CAF50',
-  },
-  noteActions: {
-    flexDirection: 'row',
-  },
-  completeButton: {
-    backgroundColor: '#4CAF50',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-    marginRight: 8,
-  },
-  deleteButton: {
-    backgroundColor: '#FF6B6B',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
   },
   emptyState: {
     alignItems: 'center',

@@ -1,11 +1,14 @@
 import { Character } from '@/components/Character';
 import { CosmeticsShowcase } from '@/components/CosmeticsShowcase';
+import { EnhancedStatCard } from '@/components/EnhancedStatCard';
+import { TabSelector } from '@/components/TabSelector';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
-import { IconSymbol } from '@/components/ui/IconSymbol';
+import { XPProgressBar } from '@/components/XPProgressBar';
+import { useTheme } from '@/contexts/ThemeContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 
 interface Note {
   id: string;
@@ -23,6 +26,7 @@ interface UserProgress {
 }
 
 export default function StatsScreen() {
+  const { theme } = useTheme();
   const [userProgress, setUserProgress] = useState<UserProgress>({ level: 1, xp: 0, totalXp: 0 });
   const [notes, setNotes] = useState<Note[]>([]);
   const [activeTab, setActiveTab] = useState<'stats' | 'cosmetics'>('stats');
@@ -33,6 +37,8 @@ export default function StatsScreen() {
     totalXpEarned: 0,
     averageXpPerNote: 0,
   });
+
+  const styles = createStyles(theme);
 
   useEffect(() => {
     loadData();
@@ -75,131 +81,149 @@ export default function StatsScreen() {
     });
   };
 
-  const StatCard = ({ title, value, subtitle, icon }: { 
-    title: string; 
-    value: string | number; 
-    subtitle?: string; 
-    icon: any; 
-  }) => (
-    <ThemedView style={styles.statCard}>
-      <View style={styles.statHeader}>
-        <IconSymbol name={icon} size={24} color="#007AFF" />
-        <ThemedText style={styles.statTitle}>{title}</ThemedText>
-      </View>
-      <ThemedText style={styles.statValue}>{value}</ThemedText>
-      {subtitle && <ThemedText style={styles.statSubtitle}>{subtitle}</ThemedText>}
-    </ThemedView>
-  );
-
   const calculateXpForNextLevel = (level: number) => level * 100;
   const xpForNextLevel = calculateXpForNextLevel(userProgress.level);
-  const xpProgress = (userProgress.xp / xpForNextLevel) * 100;
+
+  const getInsightMessage = (completedNotes: number, pendingNotes: number): string => {
+    if (completedNotes === 0) {
+      return "Complete your first note to start earning XP! 🚀";
+    }
+    if (pendingNotes === 0) {
+      return "All caught up! Great work keeping your notes organized! 🎉";
+    }
+    return `You have ${pendingNotes} pending notes. Complete them to level up faster! 💪`;
+  };
+
+  const tabOptions = [
+    { id: 'stats', label: 'Stats', icon: '📊' },
+    { id: 'cosmetics', label: 'Cosmetics', icon: '👕' },
+  ];
 
   return (
     <View style={styles.container}>
+      {/* Header */}
       <ThemedView style={styles.header}>
-        <ThemedText style={styles.headerTitle}>Your Progress</ThemedText>
-        <ThemedText style={styles.headerSubtitle}>Track your note-taking journey</ThemedText>
+        <View style={styles.headerContent}>
+          <View style={styles.headerLeft}>
+            <ThemedText style={styles.headerTitle}>Character Profile</ThemedText>
+            <ThemedText style={styles.headerSubtitle}>Track your note-taking journey 🚀</ThemedText>
+          </View>
+        </View>
         
         {/* Character Display */}
         <View style={styles.characterSection}>
           <Character level={userProgress.level} size="large" />
         </View>
         
-        {/* Tab Buttons */}
-        <View style={styles.tabButtons}>
-          <TouchableOpacity 
-            style={[styles.tabButton, activeTab === 'stats' && styles.activeTab]}
-            onPress={() => setActiveTab('stats')}
-          >
-            <ThemedText style={[styles.tabText, activeTab === 'stats' && styles.activeTabText]}>
-              📊 Stats
-            </ThemedText>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.tabButton, activeTab === 'cosmetics' && styles.activeTab]}
-            onPress={() => setActiveTab('cosmetics')}
-          >
-            <ThemedText style={[styles.tabText, activeTab === 'cosmetics' && styles.activeTabText]}>
-              👕 Cosmetics
-            </ThemedText>
-          </TouchableOpacity>
-        </View>
+        {/* Tab Selector */}
+        <TabSelector
+          tabs={tabOptions}
+          activeTab={activeTab}
+          onTabChange={(tab) => setActiveTab(tab as 'stats' | 'cosmetics')}
+        />
       </ThemedView>
 
       {activeTab === 'stats' ? (
-        <ScrollView style={styles.tabContent}>
+        <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
           {/* Level Progress */}
           <ThemedView style={styles.levelCard}>
             <View style={styles.levelHeader}>
-              <IconSymbol name="star.fill" size={32} color="#FFD700" />
+              <ThemedText style={styles.levelEmoji}>⭐</ThemedText>
               <View style={styles.levelInfo}>
                 <ThemedText style={styles.levelText}>Level {userProgress.level}</ThemedText>
-                <ThemedText style={styles.xpText}>{userProgress.xp}/{xpForNextLevel} XP</ThemedText>
+                <ThemedText style={styles.xpText}>Progress to next level</ThemedText>
               </View>
             </View>
-            <View style={styles.xpBarContainer}>
-              <View style={styles.xpBar}>
-                <View style={[styles.xpProgress, { width: `${xpProgress}%` }]} />
-              </View>
-            </View>
+            <XPProgressBar
+              currentXP={userProgress.xp}
+              maxXP={xpForNextLevel}
+              level={userProgress.level}
+              animated={true}
+              showTooltip={true}
+            />
             <ThemedText style={styles.totalXpText}>Total XP Earned: {userProgress.totalXp}</ThemedText>
           </ThemedView>
 
           {/* Stats Grid */}
           <View style={styles.statsGrid}>
-            <StatCard
+            <EnhancedStatCard
               title="Total Notes"
               value={stats.totalNotes}
-              icon="doc.text"
+              icon="📝"
+              color="#007AFF"
+              subtitle="All notes created"
             />
-            <StatCard
+            <EnhancedStatCard
               title="Completed"
               value={stats.completedNotes}
-              icon="checkmark.circle.fill"
+              icon="✅"
+              color="#4CAF50"
+              subtitle="Tasks finished"
+              trend={stats.completedNotes > stats.pendingNotes ? 'up' : 'neutral'}
             />
-            <StatCard
+            <EnhancedStatCard
               title="Pending"
               value={stats.pendingNotes}
-              icon="clock"
+              icon="⏳"
+              color="#FF9800"
+              subtitle="To be completed"
             />
-            <StatCard
+            <EnhancedStatCard
               title="Avg XP/Note"
               value={stats.averageXpPerNote}
-              icon="chart.bar"
+              icon="⚡"
+              color="#9C27B0"
+              subtitle="Points per task"
             />
           </View>
 
           {/* Achievement Levels */}
           <ThemedView style={styles.achievementSection}>
-            <ThemedText style={styles.sectionTitle}>Level Milestones</ThemedText>
-            {[1, 2, 3, 4, 5, 10, 15, 20].map(level => {
-              const isUnlocked = userProgress.level >= level;
-              const isCurrent = userProgress.level === level;
-              return (
-                <View key={level} style={[
-                  styles.achievementItem,
-                  isUnlocked && styles.unlockedAchievement,
-                  isCurrent && styles.currentLevel
-                ]}>
-                  <IconSymbol 
-                    name={isUnlocked ? "star.fill" : "star"} 
-                    size={20} 
-                    color={isUnlocked ? "#FFD700" : "#CCC"} 
-                  />
-                  <ThemedText style={[
-                    styles.achievementText,
-                    isUnlocked && styles.unlockedText,
-                    isCurrent && styles.currentLevelText
+            <ThemedText style={styles.sectionTitle}>🏆 Level Milestones</ThemedText>
+            <View style={styles.achievementGrid}>
+              {[1, 2, 3, 4, 5, 10, 15, 20].map(level => {
+                const isUnlocked = userProgress.level >= level;
+                const isCurrent = userProgress.level === level;
+                return (
+                  <View key={level} style={[
+                    styles.achievementItem,
+                    isUnlocked && styles.unlockedAchievement,
+                    isCurrent && styles.currentLevel
                   ]}>
-                    Level {level} {isCurrent && "(Current)"}
-                  </ThemedText>
-                  {isUnlocked && !isCurrent && (
-                    <IconSymbol name="checkmark" size={16} color="#4CAF50" />
-                  )}
-                </View>
-              );
-            })}
+                    <ThemedText style={styles.achievementIcon}>
+                      {isUnlocked ? '⭐' : '☆'}
+                    </ThemedText>
+                    <ThemedText style={[
+                      styles.achievementText,
+                      isUnlocked && styles.unlockedText,
+                      isCurrent && styles.currentLevelText
+                    ]}>
+                      Level {level} {isCurrent && '(Current)'}
+                    </ThemedText>
+                    {isUnlocked && !isCurrent && (
+                      <ThemedText style={styles.checkmark}>✓</ThemedText>
+                    )}
+                  </View>
+                );
+              })}
+            </View>
+          </ThemedView>
+
+          {/* Progress Insights */}
+          <ThemedView style={styles.insightsSection}>
+            <ThemedText style={styles.sectionTitle}>💡 Progress Insights</ThemedText>
+            <View style={styles.insightCard}>
+              <ThemedText style={styles.insightText}>
+                {getInsightMessage(stats.completedNotes, stats.pendingNotes)}
+              </ThemedText>
+            </View>
+            {userProgress.level >= 5 && (
+              <View style={styles.insightCard}>
+                <ThemedText style={styles.insightText}>
+                  🌟 Achievement unlocked: Dedicated Note Taker! You've reached Level {userProgress.level}!
+                </ThemedText>
+              </View>
+            )}
           </ThemedView>
         </ScrollView>
       ) : (
@@ -209,178 +233,187 @@ export default function StatsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any) => StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
+    backgroundColor: theme.colors.background,
   },
   header: {
     alignItems: 'center',
-    marginBottom: 24,
     paddingTop: 20,
-    paddingBottom: 16,
-    borderRadius: 16,
-    backgroundColor: 'rgba(0, 122, 255, 0.1)',
+    paddingBottom: 8,
+    paddingHorizontal: 16,
+    backgroundColor: theme.colors.surface,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+    shadowColor: theme.colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: theme.isDark ? 0.3 : 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  headerContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    width: '100%',
+    marginBottom: 20,
+  },
+  headerLeft: {
+    flex: 1,
   },
   headerTitle: {
     fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 8,
+    fontWeight: '900',
+    marginBottom: 4,
+    color: theme.colors.text,
   },
   headerSubtitle: {
     fontSize: 16,
-    opacity: 0.7,
-    marginBottom: 16,
+    color: theme.colors.textSecondary,
+    marginBottom: 20,
+    fontWeight: '500',
+  },
+  characterSection: {
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  tabContent: {
+    flex: 1,
+    paddingHorizontal: 16,
   },
   levelCard: {
     padding: 20,
-    marginBottom: 24,
+    marginTop: 16,
+    marginBottom: 20,
     borderRadius: 16,
-    backgroundColor: 'rgba(0, 122, 255, 0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(0, 122, 255, 0.2)',
+    backgroundColor: theme.colors.surface,
+    shadowColor: theme.colors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: theme.isDark ? 0.3 : 0.1,
+    shadowRadius: 8,
+    elevation: 4,
   },
   levelHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 16,
   },
+  levelEmoji: {
+    fontSize: 32,
+    marginRight: 12,
+  },
   levelInfo: {
-    marginLeft: 12,
+    flex: 1,
   },
   levelText: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: '800',
+    color: theme.colors.primary,
   },
   xpText: {
     fontSize: 16,
-    opacity: 0.8,
-  },
-  xpBarContainer: {
-    marginBottom: 12,
-  },
-  xpBar: {
-    width: '100%',
-    height: 12,
-    backgroundColor: 'rgba(0, 0, 0, 0.1)',
-    borderRadius: 6,
-    overflow: 'hidden',
-  },
-  xpProgress: {
-    height: '100%',
-    backgroundColor: '#4CAF50',
+    color: theme.colors.textSecondary,
+    fontWeight: '500',
   },
   totalXpText: {
     textAlign: 'center',
     fontSize: 14,
-    opacity: 0.7,
+    color: theme.colors.textSecondary,
+    marginTop: 8,
+    fontWeight: '500',
   },
   statsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    marginBottom: 24,
-  },
-  statCard: {
-    width: '48%',
-    padding: 16,
-    marginBottom: 12,
-    borderRadius: 12,
-    backgroundColor: 'rgba(0, 0, 0, 0.02)',
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-  },
-  statHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  statTitle: {
-    fontSize: 14,
-    marginLeft: 8,
-    opacity: 0.7,
-  },
-  statValue: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  statSubtitle: {
-    fontSize: 12,
-    opacity: 0.6,
+    marginBottom: 20,
   },
   achievementSection: {
-    padding: 16,
-    borderRadius: 12,
-    backgroundColor: 'rgba(0, 0, 0, 0.02)',
+    padding: 20,
+    borderRadius: 16,
+    backgroundColor: theme.colors.surface,
+    marginBottom: 20,
+    shadowColor: theme.colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: theme.isDark ? 0.3 : 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
   sectionTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: '800',
     marginBottom: 16,
     textAlign: 'center',
+    color: theme.colors.text,
+  },
+  achievementGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
   },
   achievementItem: {
+    width: '48%',
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 8,
+    paddingVertical: 12,
     paddingHorizontal: 12,
-    marginBottom: 4,
-    borderRadius: 8,
-    backgroundColor: 'rgba(0, 0, 0, 0.02)',
+    marginBottom: 8,
+    borderRadius: 12,
+    backgroundColor: theme.colors.background,
   },
   unlockedAchievement: {
-    backgroundColor: 'rgba(76, 175, 80, 0.1)',
+    backgroundColor: theme.isDark ? 'rgba(50, 215, 75, 0.15)' : 'rgba(76, 175, 80, 0.1)',
   },
   currentLevel: {
-    backgroundColor: 'rgba(255, 215, 0, 0.2)',
+    backgroundColor: theme.isDark ? 'rgba(10, 132, 255, 0.15)' : 'rgba(0, 122, 255, 0.1)',
     borderWidth: 2,
-    borderColor: '#FFD700',
+    borderColor: theme.colors.primary,
+  },
+  achievementIcon: {
+    fontSize: 16,
+    marginRight: 8,
   },
   achievementText: {
-    marginLeft: 12,
+    fontSize: 12,
+    fontWeight: '600',
     flex: 1,
-    fontSize: 16,
+    color: theme.colors.textSecondary,
   },
   unlockedText: {
-    fontWeight: '600',
+    color: theme.colors.success,
   },
   currentLevelText: {
-    fontWeight: 'bold',
-    color: '#B8860B',
+    color: theme.colors.primary,
+    fontWeight: '700',
   },
-  tabsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: 24,
+  checkmark: {
+    fontSize: 14,
+    color: theme.colors.success,
   },
-  tabButton: {
-    flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  activeTab: {
-    backgroundColor: '#007AFF',
-  },
-  tabText: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  characterSection: {
+  insightsSection: {
+    padding: 20,
+    borderRadius: 16,
+    backgroundColor: theme.colors.surface,
     marginBottom: 20,
+    shadowColor: theme.colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: theme.isDark ? 0.3 : 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  tabButtons: {
-    flexDirection: 'row',
-    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+  insightCard: {
+    backgroundColor: theme.isDark ? 'rgba(10, 132, 255, 0.1)' : 'rgba(0, 122, 255, 0.05)',
+    padding: 16,
     borderRadius: 12,
-    padding: 4,
+    marginBottom: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: theme.colors.primary,
   },
-  activeTabText: {
-    color: '#fff',
-  },
-  tabContent: {
-    flex: 1,
+  insightText: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: theme.colors.text,
+    fontWeight: '500',
   },
 });
