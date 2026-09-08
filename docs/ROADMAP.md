@@ -1038,6 +1038,8 @@ The immediate focus is the **BugLord commercial classification pipeline**.
 * [x] [AUTO] Migrate the BIOSCAN downloader to Hugging Face Hub/Xet and benchmark transfer performance.
 * [x] [REVIEW] Approve BIOSCAN v0.1 image acquisition.
 * [ ] [AUTO] Execute the approved BIOSCAN v0.1 image acquisition and preparation pipeline.
+* [ ] [REVIEW] Complete the approved BIOSCAN v0.1 archive download.
+* [ ] [AUTO] Prepare and validate the downloaded BIOSCAN v0.1 dataset.
 * [ ] [REVIEW]Train and evaluate the first BugLord-owned classifier.
 
 Development should remain focused on this milestone before beginning unrelated BugLord 2.0 feature work.
